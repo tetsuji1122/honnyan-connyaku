@@ -1,1 +1,108 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+    <!-- import CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+    <div id="app">
+        <el-form ref="form" :inline="true" :model="form" label-width="120px">
+          <el-form-item label="音声認識">
+            <el-button-group>
+              <el-button v-bind:disabled="recording"  @click="voice" plain><i class="el-icon-video-play"></i></el-button>
+              <el-button v-bind:disabled="!recording" @click="voice" plain><i class="el-icon-video-pause"></i></el-button>
+            </el-button-group>
+          <el-select v-model="lang" label=" ">
+              <el-option
+                v-for="item in options"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value">
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-form>
+      <el-form ref="form" :model="form" label-width="120px">
+        <el-form-item label="ヒト語">
+          <el-input v-model="form.voicetext" type="textarea"></el-input>
+        </el-form-item>
+        <el-form-item label="ネコ語">
+          <el-input v-model="form.cattext" type="textarea"></el-input>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <!-- import JavaScript -->
+<script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.22/vue.min.js'></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<!-- 2019-01-25 https://cdnjs.com/libraries/vue -->
+<script>
+//Chromeの音声認識
+SpeechRecognition = webkitSpeechRecognition || SpeechRecognition;
+let recognition = new SpeechRecognition();
+recognition.lang = 'ja-JP';
+
+var vue_example = new Vue({
+  el: '#app',
+  data () {
+    return {
+        form : { voicetext: '', cattext: ''},
+        options: [{
+          value: '1',
+          label: 'Japanese-cat'
+        }, {
+          value: '2',
+          label: 'English-cat'
+        }, {
+          value: '3',
+          label: 'alabian-cat'
+        }],
+        lang : '1',
+        recording : false,  
+    }
+  },
+  methods: {
+    reverse: function () {
+      this.message = this.message.split('').reverse().join('')
+    },
+    voice: function() {
+        console.log("on:"+this.recording);
+        if (!this.recording) {
+          　this.form.voicetext = "";
+            this.form.cattext = "";
+            this.recording = true;
+            this.recognise();
+        } else {
+          this.recording = false;
+          recognition.stop();
+          return;
+        }
+    },
+    recognise: function() {
+      console.log("recognise");
+      recognition.start(); //音声認識開始
+      recognition.onresult = (event) => {
+        let text = event.results[0][0].transcript;
+        this.form.voicetext = this.form.voicetext + " " + text;
+        this.form.cattext = this.form.cattext + "🐈" + this.trancsrate(text);
+        console.log(this.form.voicetext);
+      }
+      recognition.onend = (event) => {
+        console.log("end");
+        if (this.recording) recognition.start(); //音声認識開始
+      }
+    },
+    trancsrate: function(text) {
+      if (this.lang == '1') return "にゃにゃ ごろにゃん ごろごろ "
+      if (this.lang == '2') return "mewmew meow meooow "
+      if (this.lang == '3') return " اللغة العربية عَرَبِيّ عَرَبِيّ"
+      return ""
+    }
+  },
+})
+</script>
+</body>
+</html>

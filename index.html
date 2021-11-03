@@ -17,7 +17,7 @@
             </el-button-group>
           <el-select v-model="lang" label=" ">
               <el-option
-                v-for="item in options"
+                v-for="item in dict_neco"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value">
@@ -32,6 +32,10 @@
         <el-form-item label="ネコ語">
           <el-input v-model="form.cattext" type="textarea"></el-input>
         </el-form-item>
+        <el-form-item>
+          <el-button @click="speak" plain>ネコ語で話す</el-button>
+          <el-button @click="tail" plain>しっぽで話す</el-button>
+        </el-form-item>
       </el-form>
     </div>
 
@@ -39,30 +43,29 @@
 <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.22/vue.min.js'></script>
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script type="text/javascript" src="lib/tiny_segmenter.js" charset="UTF-8"></script>
 <!-- 2019-01-25 https://cdnjs.com/libraries/vue -->
 <script>
 //Chromeの音声認識
 SpeechRecognition = webkitSpeechRecognition || SpeechRecognition;
 let recognition = new SpeechRecognition();
 recognition.lang = 'ja-JP';
+//text to speech
+var synth = window.speechSynthesis;
 
 var vue_example = new Vue({
   el: '#app',
   data () {
     return {
         form : { voicetext: '', cattext: ''},
-        options: [{
-          value: '1',
-          label: 'Japanese-cat'
-        }, {
-          value: '2',
-          label: 'English-cat'
-        }, {
-          value: '3',
-          label: 'alabian-cat'
-        }],
+        //options: this.dict_neco,
         lang : '1',
-        recording : false,  
+        recording : false, 
+        dict_neco : [
+          {value:'1',label:'Japanese-cat',lang:["にゃ","ごろ","にゃん","ごろごろ","うにゃん"]},
+          {value:'2',label:'English-cat',lang:["mewmew","meow","meooow","mew","uhuu"]},
+          {value:'3',label:'Alabian-cat',lang:["عَرَبِيّ","العربية","اللغة","عَرَبِيّ","عَرَبِيّ"]}
+        ], 
     }
   },
   methods: {
@@ -97,13 +100,49 @@ var vue_example = new Vue({
       }
     },
     trancsrate: function(text) {
-      if (this.lang == '1') return "にゃにゃ ごろにゃん ごろごろ "
-      if (this.lang == '2') return "mewmew meow meooow "
-      if (this.lang == '3') return " اللغة العربية عَرَبِيّ عَرَبِيّ"
-      return ""
+      let necos = [];
+      //辞書をセット
+      let lang = [];
+      if (this.lang == '1') lang = this.dict_neco[0].lang;
+      if (this.lang == '2') lang = this.dict_neco[1].lang;
+      if (this.lang == '3') lang = this.dict_neco[2].lang;
+      //テキストを文節に分割
+      let segmenter = new TinySegmenter();
+      let segs = segmenter.segment(text);
+      //console.log(segs);
+      for (let i=0; i<segs.length;i++) {
+        //ランダムに辞書の言葉を返す
+        necos[i] = lang[Math.floor(Math.random() * lang.length)];
+      }
+      return necos.join(" ");
+    },
+    speak: function() {
+      if (synth.speaking) {
+          console.error('speechSynthesis.speaking');
+          return;
+      }
+      if (this.form.cattext !== '') {
+        let text = this.form.cattext.replace("🐈","");
+        var utterThis = new SpeechSynthesisUtterance(text);
+        utterThis.onend = function (event) {
+            console.log('SpeechSynthesisUtterance.onend');
+        }
+        utterThis.onerror = function (event) {
+            console.error('SpeechSynthesisUtterance.onerror');
+        }
+        utterThis.voice = synth.getVoices()[0];
+        utterThis.pitch = "1.2";
+        utterThis.rate = "1.1";
+        if (this.lang == '2') utterThis.lang = 'en-US';
+        synth.speak(utterThis);
+      }
+    },
+    tail:function() {
+      //ここでしっぽをふる実装をする
     }
   },
 })
+
 </script>
 </body>
 </html>
